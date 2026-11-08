@@ -1,2 +1,3 @@
-Flask
-reedsolo
+Flask==2.3.3
+reedsolo==1.7.0
+gunicorn==21.2.0
