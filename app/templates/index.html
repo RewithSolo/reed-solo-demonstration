@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reed-Solomon Lab</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <header class="header">
+        <div>
+            <h1>Reed–Solomon Lab</h1>
+            <p>Лаборатория помехоустойчивого кодирования</p>
+        </div>
+        <div class="status">
+            <span class="status-dot"></span>
+            SYSTEM ONLINE
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="theory-toggle">
+            <button id="theoryToggle" class="toggle-btn">📖 Как это работает?</button>
+            <div id="theoryContent" class="theory-content hidden">
+                <div class="theory-box">
+                    <h3>Что такое коды Рида-Соломона?</h3>
+                    <p>
+                        Коды Рида-Соломона (Reed-Solomon codes) — это класс циклических кодов для коррекции ошибок,
+                        основанный на полиномиальной арифметике в полях Галуа. Они широко используются в:
+                    </p>
+                    <ul>
+                        <li>QR-кодах и штрихкодах</li>
+                        <li>Спутниковой связи (Voyager)</li>
+                        <li>Облачном хранилище (RAID, backblaze)</li>
+                        <li>5G сетях</li>
+                    </ul>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Как это работает?</h3>
+                    <p><strong>Кодирование:</strong> Данные представляются как полином, и вычисляются "проверочные символы" (parity symbols) путём вычисления значений этого полинома в специальных точках.</p>
+                    <p><strong>Передача:</strong> Исходные данные + проверочные символы передаются через канал (где возможны ошибки).</p>
+                    <p><strong>Декодирование:</strong> Получатель использует проверочные символы для обнаружения и исправления ошибок, восстанавливая исходные данные.</p>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Параметры кода</h3>
+                    <p><strong>nsym:</strong> Количество проверочных символов</p>
+                    <ul>
+                        <li>Код может исправить до <strong>nsym/2 ошибок</strong> (когда позиции неизвестны)</li>
+                        <li>Код может восстановить до <strong>nsym стираний</strong> (когда позиции известны)</li>
+                    </ul>
+                    <p><strong>Примеры:</strong>
+                    <ul>
+                        <li>RS(17,15) — 2 проверочных символа → исправляет 1 ошибку или 2 стирания</li>
+                        <li>RS(17,11) — 6 проверочных символов → исправляет 3 ошибки или 6 стираний</li>
+                    </ul>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Ошибки vs Стирания</h3>
+                    <p><strong>Ошибки (errors):</strong> Неизвестные позиции, неизвестные значения. Требуют больше проверочных символов.</p>
+                    <p><strong>Стирания (erasures):</strong> Известные позиции, неизвестные значения. Требуют меньше проверочных символов.</p>
+                    <p>Практический пример: потеря пакета в сети = стирание. Получение повреждённого пакета = ошибка.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="intro">
+            <h2>Передача данных через шумный канал</h2>
+            <p>
+                Исследуйте, как коды Рида — Соломона
+                обнаруживают и исправляют ошибки передачи.
+            </p>
+        </section>
+
+        <section class="scenarios">
+            <h3>Интерактивные сценарии</h3>
+            <div id="scenariosList" class="scenarios-grid"></div>
+        </section>
+
+        <section class="pipeline">
+
+            <div class="node source">
+                <div class="node-icon">01</div>
+                <h3>Источник</h3>
+                <p>Исходное сообщение</p>
+                <div class="data-preview">HELLO WORLD</div>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node encoder">
+                <div class="node-icon">02</div>
+                <h3>Кодировщик</h3>
+                <p>Добавление избыточности</p>
+                <div class="data-preview">DATA + PARITY</div>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node channel">
+                <div class="node-icon">03</div>
+                <h3>Шумный канал</h3>
+                <p>Искажение символов</p>
+                <div class="data-preview">DATA + NOISE</div>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node decoder">
+                <div class="node-icon">04</div>
+                <h3>Декодировщик</h3>
+                <p>Поиск и исправление ошибок</p>
+                <div class="data-preview">CORRECTION</div>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node receiver">
+                <div class="node-icon">05</div>
+                <h3>Получатель</h3>
+                <p>Восстановленное сообщение</p>
+                <div class="data-preview">HELLO WORLD</div>
+            </div>
+
+        </section>
+
+        
+<section class="panel">
+    <h2>Лаборатория кодирования</h2>
+    <p>Исследуйте коды Рида-Соломона с разными параметрами.</p>
+
+    <div class="codec-selector">
+        <label for="codecSelect">Выбор кода:</label>
+        <select id="codecSelect">
+            <option value="2">RS(17,15) — 1 ошибка</option>
+            <option value="4">RS(17,13) — 2 ошибки</option>
+            <option value="6" selected>RS(17,11) — 3 ошибки</option>
+            <option value="8">RS(17,9) — 4 ошибки</option>
+            <option value="10">RS(17,7) — 5 ошибок</option>
+        </select>
+        <span id="codecInfo" class="codec-info"></span>
+    </div>
+
+    <div class="input-group">
+        <label for="message">Исходное сообщение</label>
+        <input
+            type="text"
+            id="message"
+            value="HELLO"
+            maxlength="15"
+            placeholder="Введите сообщение"
+        >
+        <span id="messageLength" class="message-length"></span>
+        <div class="button-group">
+            <button id="encodeBtn">Закодировать</button>
+            <button id="resetBtn" class="reset-button">🔄 Начать сначала</button>
+        </div>
+        <p id="errorMessage" class="error-message"></p>
+    </div>
+
+    <div id="result" class="result hidden">
+        <div class="result-info">
+            <h3>Информация о коде</h3>
+            <div id="configInfo" class="config-info"></div>
+        </div>
+
+        <h3>Исходные данные (информационные символы)</h3>
+        <div id="dataSymbols" class="symbols"></div>
+
+        <h3>Проверочные символы (parity symbols)</h3>
+        <div class="parity-explanation">
+            <p>Проверочные символы вычисляются на основе информационных символов с помощью полиномиальной арифметики в поле Галуа. Они позволяют алгоритму декодирования находить и исправлять ошибки.</p>
+        </div>
+        <div id="paritySymbols" class="symbols"></div>
+
+        
+        <h3>Итоговое кодовое слово</h3>
+        <p class="hint">
+            Нажмите на символы, которые хотите повредить.
+        </p>
+
+        <div id="codeword" class="symbols"></div>
+
+        <div class="selection-counter">
+            <span id="selectionCount">Выбрано символов: 0</span>
+        </div>
+
+        <div class="mode-selector">
+            <label for="damageMode">Тип повреждения:</label>
+
+            <select id="damageMode">
+                <option value="error">Ошибка</option>
+                <option value="erasure">Стирание</option>
+            </select>
+            <span id="modeHint" class="mode-hint"></span>
+        </div>
+        <button id="corruptBtn" class="corrupt-button">
+            Повредить выбранные символы
+        </button>
+
+        <div id="corruptionResult" class="corruption-result hidden">
+            <h3>Исходное кодовое слово</h3>
+            <div id="originalSymbols" class="symbols"></div>
+
+            <h3>После прохождения через шумный канал</h3>
+            <div id="corruptedSymbols" class="symbols"></div>
+
+            <p id="corruptionInfo" class="hint"></p>
+
+            <div class="decode-controls">
+                <button id="decodeBtn" class="decode-button">
+                    Декодировать и исправить ошибки
+                </button>
+            </div>
+
+            <div id="decodeResult" class="decode-result hidden">
+                <h3>Результат декодирования</h3>
+
+                <div id="decodeStatus" class="decode-status"></div>
+
+                <div id="recoveryInfo" class="recovery-info"></div>
+
+                <h3>Исправленное кодовое слово</h3>
+                <div id="correctedSymbols" class="symbols"></div>
+
+                <h3>Восстановленное сообщение</h3>
+                <div id="decodedMessage" class="decoded-message"></div>
+
+                <div id="statisticsInfo" class="statistics-info"></div>
+
+                <p id="correctedInfo" class="hint"></p>
+            </div>
+
+            <div id="failureInfo" class="failure-info hidden">
+                <h3>Восстановление невозможно</h3>
+                <p>Количество ошибок превышает способность этого кода к коррекции. Даже один из проверочных символов может содержать ошибку, и дополнительные ошибки могут помешать правильному восстановлению данных.</p>
+                <div id="failureDetails"></div>
+            </div>
+
+
+        </div>
+
+
+        <div class="legend">
+            <span><i class="legend-data"></i> Данные</span>
+            <span><i class="legend-parity"></i> Проверочные символы</span>
+        </div>
+    </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>О стенде</h4>
+                <p>
+                    Reed-Solomon Lab — интерактивный демонстратор кодов Рида-Соломона.
+                    Исследуйте, как работает помехоустойчивое кодирование.
+                </p>
+            </div>
+            <div class="footer-section">
+                <h4>Применение</h4>
+                <p>
+                    Коды Рида-Соломона используются в QR-кодах, спутниковой связи (Voyager),
+                    облачном хранилище (Backblaze), 5G сетях и многом другом.
+                </p>
+            </div>
+            <div class="footer-section">
+                <h4>Технология</h4>
+                <p>Flask + reedsolo + JavaScript. Все вычисления выполняются в полиномиальной арифметике.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2024 Reed-Solomon Laboratory</span>
+        </div>
+    </footer>
+
+</body>
+</html>
